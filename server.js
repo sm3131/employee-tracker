@@ -15,7 +15,7 @@ function welcome() {
             type: 'list',
             name: 'trackerOptions',
             message: 'What would you like to do?',
-            choices: ['View all departments', 'View all roles', 'View all employees', 'Add a department', 'Add a role', 'Add an employee', 'Update an employee role', 'Delete Department', 'Leave application']
+            choices: ['View all departments', 'View all roles', 'View all employees', 'Add a department', 'Add a role', 'Add an employee', 'Update an employee role', 'Delete Department', 'Delete Employee', 'Leave application']
         })
         .then(({ trackerOptions }) => {
             if (trackerOptions === 'View all departments') {
@@ -54,6 +54,11 @@ function welcome() {
                     .then(() => {
                         whichDepartment(departmentArr);
                     })
+            } else if(trackerOptions === 'Delete Employee') {
+                findEmployees()
+                .then(() => {
+                    whichEmployee(employeesNamesArr);
+                })
             }
             else if (trackerOptions === 'Leave application') {
                 console.log('Have a Great Day!');
@@ -362,6 +367,7 @@ function insertEmployee() {
         .then(() => welcome())
 }
 
+// Functions to update employee's role
 function updateEmployee(employeesArr, rolesArr) {
     inquirer
         .prompt([
@@ -431,6 +437,7 @@ function updateEmployee(employeesArr, rolesArr) {
     }
 }
 
+// Functions to delete a department from the database
 let departmentsInfo = []
 function findDepartments() {
     return db.promise().query(`SELECT * FROM departments`)
@@ -441,7 +448,7 @@ function findDepartments() {
 
 let departmentArr = []
 function createDepartmentArr(departments) {
-    let depArr = departments.forEach(obj => {
+        departments.forEach(obj => {
         departmentArr.push(obj.name);
         departmentsInfo.push(obj);
     })
@@ -486,6 +493,62 @@ function deleteDepartment(departId) {
             })
             .then(() => welcome())
 
+}
+
+// Functions to delete an employee from database
+let employeesInfoArr = []
+function findEmployees(){
+    return db.promise().query(`SELECT * FROM employees`)
+    .then(([rows, fields]) => {
+        createEmployeesArr(rows);
+    })
+}
+
+let employeesNamesArr = []
+function createEmployeesArr(employees) {
+        employees.forEach(obj => {
+        let fullEmpName = obj.first_name + " " + obj.last_name
+        employeesNamesArr.push(fullEmpName);
+        employeesInfoArr.push(obj);
+    })
+}
+
+function whichEmployee(empNames){
+    inquirer
+    .prompt(
+        {
+            type: 'list',
+            name: 'empDelete',
+            message: 'Select which employee you would like to delete from the list below.',
+            choices: empNames
+        }
+    )
+    .then(value => {
+        let empChoice = value.empDelete
+        let empIdArr = employeesInfoArr.filter(getEmpId);
+        let empId = empIdArr[0].id
+
+        function getEmpId(item) {
+            if (item.first_name + " " + item.last_name === empChoice) {
+                return item;
+            }
+        }
+        deleteEmployee(empId);
+    })
+}
+
+function deleteEmployee(employeeId) {
+    const sql = `DELETE FROM employees WHERE id = ?`
+    const params = employeeId
+
+    db.promise().query(sql, params)
+            .then(() => {
+                console.log('Employee has been deleted.');
+            })
+            .catch((err) => {
+                console.log(err.message);
+            })
+            .then(() => welcome())
 }
 
 welcome();
